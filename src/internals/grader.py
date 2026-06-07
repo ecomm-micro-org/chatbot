@@ -1,6 +1,9 @@
+import re
 from typing import Literal
 
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_core.output_parsers import JsonOutputParser
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_groq import ChatGroq
 from langgraph.graph import MessagesState
 from pydantic import BaseModel, Field
 
@@ -9,7 +12,8 @@ GRADE_PROMPT = (
     "Here is the retrieved document: \n\n {context} \n\n"
     "Here is the user question: {question} \n"
     "If the document contains keyword(s) or semantic meaning related to the user question, grade it as relevant. \n"
-    "Give a binary score 'yes' or 'no' score to indicate whether the document is relevant to the question."
+    "Respond ONLY with raw JSON, no markdown, no explanation:\n"
+    '{{ "binary_score": "yes" }} or {{ "binary_score": "no" }}'
 )
 
 
@@ -21,9 +25,22 @@ class RelevenceGrader(BaseModel):
     )
 
 
-grader_model = ChatGoogleGenerativeAI(
-    model="gemini-2.5-flash",
+grader_model = ChatGroq(
+    model="qwen/qwen3-32b",
+    temperature=0,
 )
+
+prompt = ChatPromptTemplate.from_messages([("human", GRADE_PROMPT)])
+
+
+def strip_think_args(text: str) -> str:
+    """Remove <think>...</think> blocks from model output."""
+    return re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
+
+
+parser = JsonOutputParser()
+
+grader_chain = prompt | grader_model | parser
 
 
 def grade_documents(
@@ -33,11 +50,16 @@ def grade_documents(
     question = state["messages"][0].content
     context = state["messages"][-1].content
 
-    prompt = GRADE_PROMPT.format(question=question, context=context)
-    response = grader_model.with_structured_output(RelevenceGrader).invoke(
-        [{"role": "user", "content": prompt}]
+    response = (prompt | grader_model).invoke(
+        {"question": question, "context": context}
     )
-    score = response.binary_score
+    cleaned_response = strip_think_args(response.content)
+
+    try:
+        result = parser.parse(cleaned_response)
+        score = result.get("binary_score", "no")
+    except Exception:
+        score = "no"
 
     if score == "yes":
         return "generate_answer"

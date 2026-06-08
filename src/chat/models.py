@@ -2,14 +2,7 @@ from enum import Enum
 from typing import Any, Optional, Union
 
 from pydantic import BaseModel, Field, model_validator
-
-
-class ChatRequest(BaseModel):
-    message: str
-
-
-class ChatResponse(BaseModel):
-    response: str
+from pydantic.config import ConfigDict
 
 
 class MessageRole(str, Enum):
@@ -140,9 +133,7 @@ class HumanMessage(BaseModel):
     role: MessageRole = MessageRole.HUMAN
     content: str
     id: Optional[str] = None
-
-    class Config:
-        extra = "allow"
+    model_config = ConfigDict(extra="allow")
 
 
 class AIMessage(BaseModel):
@@ -153,9 +144,7 @@ class AIMessage(BaseModel):
     invalid_tool_calls: list[Any] = Field(default_factory=list)
     response_metadata: Optional[ResponseMetadata] = None
     usage_metadata: Optional[UsageMetadata] = None
-
-    class Config:
-        extra = "allow"
+    model_config = ConfigDict(extra="allow")
 
 
 class ToolMessage(BaseModel):
@@ -164,6 +153,7 @@ class ToolMessage(BaseModel):
     name: Optional[str] = None
     id: Optional[str] = None
     tool_call_id: Optional[str] = None
+    model_config = ConfigDict(extra="allow")
 
     # Parsed products — populated automatically
     products: list[Product] = Field(default_factory=list)
@@ -176,9 +166,6 @@ class ToolMessage(BaseModel):
             except Exception:
                 pass  # Leave products empty if parsing fails
         return self
-
-    class Config:
-        extra = "allow"
 
 
 AgentMessage = Union[HumanMessage, AIMessage, ToolMessage]
@@ -208,8 +195,6 @@ class AgentResponse(BaseModel):
             else:
                 parsed.append(AIMessage(**msg_dict))
         return cls(messages=parsed)
-
-    # -- Convenience accessors --
 
     @property
     def human_messages(self) -> list[HumanMessage]:
@@ -245,7 +230,6 @@ def _langchain_msg_to_dict(msg: Any) -> dict[str, Any]:
     if isinstance(msg, dict):
         return msg
 
-    # LangChain messages expose these attributes
     data: dict[str, Any] = {
         "content": getattr(msg, "content", ""),
         "id": getattr(msg, "id", None),

@@ -5,3 +5,4 @@ venv
 *.pyc
 run.sh
 *.idea
+.pytest_cache

@@ -1,4 +1,4 @@
-FROM python:3.14-slim
+FROM ghcr.io/astral-sh/uv:0.11-python3.14-trixie-slim
 WORKDIR /app
 COPY pyproject.toml .
 COPY uv.lock .

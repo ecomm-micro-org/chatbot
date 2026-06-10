@@ -6,17 +6,17 @@ import grpc
 from grpc.aio import InternalError
 from langchain.chat_models import init_chat_model
 
-from src.chat.models import AgentResponse
-from src.chatbot_pb2 import (
+from pb.chatbot_pb2 import (
     ChatRequest,
     ChatResponse,
     GenerateDescriptionRequest,
     GenerateDescriptionResponse,
 )
-from src.chatbot_pb2_grpc import (
+from pb.chatbot_pb2_grpc import (
     ChatbotServiceServicer,
     add_ChatbotServiceServicer_to_server,
 )
+from src.chat.models import AgentResponse
 from src.internals.workflow import create_workflow
 
 graph = None

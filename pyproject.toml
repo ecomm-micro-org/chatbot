@@ -8,6 +8,7 @@ description = "An agentic chatbot with product description generation service"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
+    "googleapis-common-protos>=1.75.0",
     "grpcio>=1.81.0",
     "grpcio-tools>=1.81.0",
     "ipython>=9.13.0",
